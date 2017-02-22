@@ -2,12 +2,82 @@
 <html lang="en">
 <head>
     <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script type="text/babel" >
         "use strict";
+
+let socket, canvas, ctx;
+let draws = {};
+
+const connectSocket = (e) => {
+     var sqr = document.querySelector("#getSqr");
+    socket = io.connect();
+    
+    socket.on('connect', () => {
+        console.log('connecting')
+    });
+    
+    socket.on('updateMyNum', (data) => {
+        valToChange.innerHTML = data.msg;
+    });
+    
+    socket.on('draw', (data) => {
+        draws[data.time] = data.coords;
+        draws[data.time].color = '#014421';
+        draw();   
+    });
+    
+    sqr.addEventListener('click', function() {
+       socket.emit('giveSqr',{msg: 'Can I has sqaure?'}); 
+    });
+    
+    
+}
+
+ const draw = () => {
+      ctx.clearRect(0,0, canvas.width, canvas.height);
+        let keys = Object.keys(draws);
+        
+        for(let i = 0; i < keys.length; i++){
+            const drawCall = draws[keys[i]];
+            
+            ctx.save();
+            ctx.fillStyle = drawCall.color;
+            ctx.fillRect(drawCall.x, drawCall.y, drawCall.width, drawCall.height);
+            ctx.restore();
+    
+        };
+    };
+
+const setCalls = () => {
+  let time = new Date().getTime();
+    draws[time] = {x: 100, y: 100, width: 100, height: 100};
+    
+    time = new Date().getTime();
+    let coords = {x: 0, y: 0, width: 100, height: 100};
+    
+    socket.emit('draw', {time:time, coords:coords});
+};
+
+const init = () => {
+    canvas = document.getElementById("canvas");
+    ctx = canvas.getContext("2d");
+    connectSocket();  
+
+    ctx.fillRect(100,100,50,50);
+    
+    draws.cords = {x: 250, y: 250, width: 10, height: 10};
+    
+    setCalls();
+    
+};
+
+window.onload = init;
     
     </script>
 </head>
 <body>
-
+    <canvas id="canvas" width="500" height="500" style="display: block; border:1px solid #d3d3d3;"></canvas>
+    <button id="getSqr">Get Square</button>
 </body>
 </html>
